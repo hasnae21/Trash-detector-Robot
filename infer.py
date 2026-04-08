@@ -1,4 +1,5 @@
 import argparse
+import cv2
 from ultralytics import YOLO
 
 SUPER_CLASSES = ['Plastic', 'Metal', 'Glass', 'Paper', 'Other']
@@ -48,6 +49,7 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
 
+<<<<<<< HEAD
     model = YOLO(args.model)
     results = model.predict(source=args.source, save=args.save)
 
@@ -59,3 +61,39 @@ if __name__ == "__main__":
                 conf = float(box.conf)
                 print(f"{SUPER_CLASSES[super_cls]} ({conf:.2f}) — original: {result.names[original_cls]}")
 
+=======
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    model = YOLO(args.model)
+
+    for result in model.predict(source=args.source, stream=True):
+        frame = result.orig_img.copy()
+
+        for box in result.boxes:
+            original_cls = int(box.cls)
+            super_cls = CLASS_MAP.get(original_cls, 4)
+            conf = float(box.conf)
+            label = f"{SUPER_CLASSES[super_cls]} {conf:.2f}"
+            color = COLORS[super_cls]
+
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+            # Draw box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+
+            # Draw label background
+            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+            cv2.rectangle(frame, (x1, y1 - th - 8), (x1 + tw + 4, y1), color, -1)
+
+            # Draw label text
+            cv2.putText(frame, label, (x1 + 2, y1 - 4),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+
+        cv2.imshow("Litter Detection", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
+>>>>>>> 9bb3e35 (Classes well categorized !)
