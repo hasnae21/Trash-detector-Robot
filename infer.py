@@ -4,6 +4,15 @@ from ultralytics import YOLO
 
 SUPER_CLASSES = ['Plastic', 'Metal', 'Glass', 'Paper', 'Other']
 
+# Color per super-class (BGR)
+COLORS = {
+    0: (0, 165, 255),   # Plastic  → Orange
+    1: (0, 0, 255),     # Metal    → Red
+    2: (255, 255, 0),   # Glass    → Cyan
+    3: (0, 255, 0),     # Paper    → Green
+    4: (128, 0, 128),   # Other    → Purple
+}
+
 CLASS_MAP = {
     # Plastic → 0
     3: 0, 4: 0, 5: 0, 7: 0, 21: 0, 22: 0, 24: 0, 27: 0,
@@ -39,35 +48,13 @@ parser.add_argument(
     action="store_true",
     help="save predictions"
 )
-parser.add_argument(
-    "--remap",
-    action="store_true",
-    default=True,
-    help="remap 60 classes to 5 super-categories"
-)
 
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-<<<<<<< HEAD
-    model = YOLO(args.model)
-    results = model.predict(source=args.source, save=args.save)
-
-    if args.remap:
-        for result in results:
-            for box in result.boxes:
-                original_cls = int(box.cls)
-                super_cls = CLASS_MAP.get(original_cls, 4)
-                conf = float(box.conf)
-                print(f"{SUPER_CLASSES[super_cls]} ({conf:.2f}) — original: {result.names[original_cls]}")
-
-=======
 if __name__ == "__main__":
     args = parser.parse_args()
 
     model = YOLO(args.model)
 
-    for result in model.predict(source=args.source, stream=True):
+    for result in model.predict(source=args.source, stream=True, conf =0.6):
         frame = result.orig_img.copy()
 
         for box in result.boxes:
@@ -75,6 +62,7 @@ if __name__ == "__main__":
             super_cls = CLASS_MAP.get(original_cls, 4)
             conf = float(box.conf)
             label = f"{SUPER_CLASSES[super_cls]} {conf:.2f}"
+            
             color = COLORS[super_cls]
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
@@ -96,4 +84,3 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
->>>>>>> 9bb3e35 (Classes well categorized !)
