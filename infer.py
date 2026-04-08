@@ -1,7 +1,17 @@
 import argparse
+import cv2
 from ultralytics import YOLO
 
 SUPER_CLASSES = ['Plastic', 'Metal', 'Glass', 'Paper', 'Other']
+
+# Color per super-class (BGR)
+COLORS = {
+    0: (0, 165, 255),   # Plastic  → Orange
+    1: (0, 0, 255),     # Metal    → Red
+    2: (255, 255, 0),   # Glass    → Cyan
+    3: (0, 255, 0),     # Paper    → Green
+    4: (128, 0, 128),   # Other    → Purple
+}
 
 CLASS_MAP = {
     # Plastic → 0
@@ -34,28 +44,48 @@ parser.add_argument(
     help="path to data to infer on"
 )
 parser.add_argument(
+    "--conf",
+    type=float,
+    default=0.3,
+    help="confidence threshold (default: 0.3)"
+)
+parser.add_argument(
     "--save",
     action="store_true",
     help="save predictions"
-)
-parser.add_argument(
-    "--remap",
-    action="store_true",
-    default=True,
-    help="remap 60 classes to 5 super-categories"
 )
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
     model = YOLO(args.model)
-    results = model.predict(source=args.source, save=args.save)
 
-    if args.remap:
-        for result in results:
-            for box in result.boxes:
-                original_cls = int(box.cls)
-                super_cls = CLASS_MAP.get(original_cls, 4)
-                conf = float(box.conf)
-                print(f"{SUPER_CLASSES[super_cls]} ({conf:.2f}) — original: {result.names[original_cls]}")
+    for result in model.predict(source=args.source, stream=True, conf=args.conf):
+        frame = result.orig_img.copy()
 
+        for box in result.boxes:
+            original_cls = int(box.cls)
+            super_cls = CLASS_MAP.get(original_cls, 4)
+            conf = float(box.conf)
+            label = f"{SUPER_CLASSES[super_cls]} {conf:.2f}"
+            color = COLORS[super_cls]
+
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+            # Draw box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+
+            # Draw label background
+            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+            cv2.rectangle(frame, (x1, y1 - th - 8), (x1 + tw + 4, y1), color, -1)
+
+            # Draw label text
+            cv2.putText(frame, label, (x1 + 2, y1 - 4),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+
+        cv2.imshow("Litter Detection", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()

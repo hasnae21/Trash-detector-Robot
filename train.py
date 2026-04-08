@@ -30,6 +30,10 @@ if __name__ == "__main__":
                 name=f"{args.model_name}_{args.epochs}epochs",
                 pretrained=True,
                 optimizer='SGD',
+                # Stronger lighting augmentation for real-world robustness
+                hsv_h=0.02,   # hue shift (was 0.015)
+                hsv_s=0.8,    # saturation variation (was 0.7)
+                hsv_v=0.6,    # brightness variation (was 0.4) — main fix for lighting
                 )
 
     metrics = model.val()
